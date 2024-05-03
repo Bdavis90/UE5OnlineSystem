@@ -13,6 +13,7 @@
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
+#include  "Online/OnlineSessionNames.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -67,9 +68,7 @@ AOnlineSystemCharacter::AOnlineSystemCharacter()
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
 		}
 	}
-
-	CreateSessionCompleteDelegate.BindUObject(this, &ThisClass::OnCreatedSessionComplete);
-
+	
 }
 
 void AOnlineSystemCharacter::BeginPlay()
@@ -85,6 +84,10 @@ void AOnlineSystemCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	CreateSessionCompleteDelegate.BindUObject(this, &ThisClass::OnCreatedSessionComplete);
+
+	FindSessionsCompleteDelegate.BindUObject(this, &ThisClass::OnFindSessionsComplete);
 
 }
 
@@ -128,6 +131,31 @@ void AOnlineSystemCharacter::CreateSession()
 
 }
 
+void AOnlineSystemCharacter::JoinSession()
+{
+	// Find game sessions
+
+	if(!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	// Add our delegate to the online session interface delegate list
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
+
+	// Create session search settings
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	SessionSearch->MaxSearchResults = 10000;
+	SessionSearch->bIsLanQuery = false;
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals); // Make sure sessions we find are using presence
+
+	// Get local player so we can use the NetId
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+
+	// Find sessions
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
+}
+
 void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	if (bWasSuccessful)
@@ -139,6 +167,22 @@ void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bW
 		if(GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Failed to create session.")));
+		}
+	}
+}
+
+void AOnlineSystemCharacter::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	if(bWasSuccessful)
+	{
+		for(auto Result : SessionSearch->SearchResults)
+		{
+			FString Id = Result.GetSessionIdStr();
+			FString User = Result.Session.OwningUserName;
+			if(GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, FString::Printf(TEXT("Id: %s, User %s"),*Id, *User));
+			}
 		}
 	}
 }

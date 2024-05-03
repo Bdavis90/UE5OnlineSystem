@@ -79,9 +79,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CreateSession();
 
+	UFUNCTION(BlueprintCallable)
+	void JoinSession();
+
 	void OnCreatedSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionsComplete(bool bWasSuccessful);
 
 private:
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
+	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
+
+	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 };
 
