@@ -10,6 +10,9 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "OnlineSessionSettings.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -20,7 +23,7 @@ AOnlineSystemCharacter::AOnlineSystemCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -52,6 +55,21 @@ AOnlineSystemCharacter::AOnlineSystemCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
+
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
+		}
+	}
+
+	CreateSessionCompleteDelegate.BindUObject(this, &ThisClass::OnCreatedSessionComplete);
+
 }
 
 void AOnlineSystemCharacter::BeginPlay()
@@ -67,6 +85,62 @@ void AOnlineSystemCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+}
+
+void AOnlineSystemCharacter::CreateSession()
+{
+	// Called by pressing the 1 key
+
+	// Check if the online session interface is valid
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	// Get the existing session
+	FNamedOnlineSession* ExistingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+
+	// Delete existing session so we can create a new one
+	if (ExistingSession)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession);
+	}
+
+	// Add our delegate to the online session interface delegate list
+	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+
+	// Create Session settings
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	SessionSettings->bIsLANMatch = false; 
+	SessionSettings->NumPublicConnections = 4; // # players can connect to game
+	SessionSettings->bAllowJoinInProgress = true; // Join while the game is going
+	SessionSettings->bAllowJoinViaPresence = true; // Look for games in your region
+	SessionSettings->bShouldAdvertise = true; // Steam advertises session so others can find
+	SessionSettings->bUsesPresence = true; // Find session in your region
+	SessionSettings->bUseLobbiesIfAvailable = true;
+
+
+	// Get local player so we can use the NetId
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	// Create a new session
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+
+}
+
+void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Created session: %s"), *SessionName.ToString()));
+
+	} else
+	{
+		if(GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Failed to create session.")));
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,7 +150,7 @@ void AOnlineSystemCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -106,7 +180,7 @@ void AOnlineSystemCharacter::Move(const FInputActionValue& Value)
 
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
