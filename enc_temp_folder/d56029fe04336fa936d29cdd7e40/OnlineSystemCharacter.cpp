@@ -89,8 +89,6 @@ void AOnlineSystemCharacter::BeginPlay()
 
 	FindSessionsCompleteDelegate.BindUObject(this, &ThisClass::OnFindSessionsComplete);
 
-	JoinSessionCompleteDelegate.BindUObject(this, &ThisClass::OnJoinSessionComplete);
-
 }
 
 void AOnlineSystemCharacter::CreateSession()
@@ -124,7 +122,6 @@ void AOnlineSystemCharacter::CreateSession()
 	SessionSettings->bShouldAdvertise = true; // Steam advertises session so others can find
 	SessionSettings->bUsesPresence = true; // Find session in your region
 	SessionSettings->bUseLobbiesIfAvailable = true;
-	SessionSettings->Set(FName("MatchType"), FString("FreeForAll"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 
 	// Get local player so we can use the NetId
@@ -171,7 +168,6 @@ void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bW
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			// Travel to the lobby map
 			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
 		}
 
@@ -187,53 +183,14 @@ void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bW
 
 void AOnlineSystemCharacter::OnFindSessionsComplete(bool bWasSuccessful)
 {
-	if (!OnlineSessionInterface.IsValid()) return;
 	for (auto Result : SessionSearch->SearchResults)
 	{
 		FString Id = Result.GetSessionIdStr();
 		FString User = Result.Session.OwningUserName;
-		FString MatchType;
-			Result.Session.SessionSettings.Get(FName("MatchType"), MatchType);
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, FString::Printf(TEXT("Id: %s, User %s"), *Id, *User));
 		}
-
-		if (MatchType == FString("FreeForAll"))
-		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Cyan, FString::Printf(TEXT("Joining Match Type: %s"), *MatchType));
-			}
-		}
-
-		// Add our delegate to the online session interface delegate list
-		OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
-
-		// Get local player so we can use the NetId
-		const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-		// Join the game session
-		OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, Result);
-	}
-}
-
-void AOnlineSystemCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-{
-	if (!OnlineSessionInterface.IsValid()) return;
-
-	FString Address;
-	if(OnlineSessionInterface->GetResolvedConnectString(NAME_GameSession, Address))
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, FString::Printf(TEXT("Connect string: %s"), *Address));
-		}
-	}
-
-	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-	if(PlayerController)
-	{
-		PlayerController->ClientTravel(Address, TRAVEL_Absolute);
 	}
 }
 

@@ -6,7 +6,6 @@
 #include "OnlineSubsystem.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/OnlineSessionDelegates.h"
-#include "Interfaces/OnlineSessionInterface.h"
 #include "Logging/LogMacros.h"
 #include "OnlineSystemCharacter.generated.h"
 
@@ -85,12 +84,10 @@ public:
 
 	void OnCreatedSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
 private:
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
 	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
-	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
 
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 };
