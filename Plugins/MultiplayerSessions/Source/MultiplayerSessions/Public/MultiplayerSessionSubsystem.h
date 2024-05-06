@@ -19,7 +19,7 @@ public:
 	UMultiplayerSessionSubsystem();
 
 	/*
-	 * To handle functionality. The Online calls will call these
+	 * To handle functionality. The Menu class will call these
 	 */
 
 	void CreateSession(int32 NumPublicConnections, FString MatchType);
