@@ -59,16 +59,10 @@ void UMultiplayerSessionSubsystem::CreateSession(int32 NumPublicConnections, FSt
 	{
 		// Remove delegate if CreateSession failed
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+
+		// Broadcast our own custom delegate
+		MultiplayerOnCreateSessionComplete.Broadcast(false);
 	}
-
-	UWorld* World = GetWorld();
-
-	if(World)
-	{
-		World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
-	}
-
-
 }
 
 void UMultiplayerSessionSubsystem::FindSession(int32 MaxSearchResults)
@@ -89,6 +83,14 @@ void UMultiplayerSessionSubsystem::StartSession()
 
 void UMultiplayerSessionSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	if(SessionInterface)
+	{
+		// Remove delegate if CreateSession failed
+		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+	}
+
+	// Broadcast our own custom delegate
+	MultiplayerOnCreateSessionComplete.Broadcast(true);
 }
 
 void UMultiplayerSessionSubsystem::OnFindSessionComplete(bool bWasSuccessful)
