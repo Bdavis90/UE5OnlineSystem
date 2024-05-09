@@ -5,6 +5,8 @@
 
 #include "Components/Button.h"
 #include "MultiplayerSessionSubsystem.h"
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
 
 void UMenuWidget::MenuSetup(int32 NumOfPublicConnections, FString TypeOfMatch)
 {
@@ -39,7 +41,12 @@ void UMenuWidget::MenuSetup(int32 NumOfPublicConnections, FString TypeOfMatch)
 
 	if(MultiplayerSessionSubsystem)
 	{
+		// Bind delegates to the multiplayer session subsystem
 		MultiplayerSessionSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+		MultiplayerSessionSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &ThisClass::UMenuWidget::OnDestorySession);
+		MultiplayerSessionSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this, &ThisClass::UMenuWidget::OnStartSession);
+		MultiplayerSessionSubsystem->MultiplayerOnFindSessionComplete.AddUObject(this, &ThisClass::OnFindSessions);
+		MultiplayerSessionSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
 	}
 
 }
@@ -106,6 +113,22 @@ void UMenuWidget::JoinButtonClicked()
 		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, FString(TEXT("Join Button Clicked")));
 	}
 
+}
+
+void UMenuWidget::OnDestorySession(bool bWasSuccessful)
+{
+}
+
+void UMenuWidget::OnStartSession(bool bWasSuccessful)
+{
+}
+
+void UMenuWidget::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful)
+{
+}
+
+void UMenuWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
+{
 }
 
 void UMenuWidget::MenuTearDown()
