@@ -54,6 +54,7 @@ void UMultiplayerSessionSubsystem::CreateSession(int32 NumPublicConnections, FSt
 	LastSessionSettings->bUsesPresence = true; // Find session in your region
 	LastSessionSettings->bUseLobbiesIfAvailable = true;
 	LastSessionSettings->Set(FName("MatchType"), MatchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	LastSessionSettings->BuildUniqueId = 1; // Ability to see other hosted sessions
 	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 
 	if(!SessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *LastSessionSettings))
@@ -116,6 +117,21 @@ void UMultiplayerSessionSubsystem::DestroySession()
 
 void UMultiplayerSessionSubsystem::StartSession()
 {
+	if(!SessionInterface.IsValid())
+	{
+		MultiplayerOnStartSessionComplete.Broadcast(false);
+		return;
+	}
+
+	StartSessionCompleteDelegateHandle = SessionInterface->AddOnStartSessionCompleteDelegate_Handle(StartSessionCompleteDelegate);
+
+	if(!SessionInterface->StartSession(NAME_GameSession))
+	{
+		SessionInterface->ClearOnStartSessionCompleteDelegate_Handle(StartSessionCompleteDelegateHandle);
+
+		MultiplayerOnStartSessionComplete.Broadcast(false);
+	}
+
 }
 
 void UMultiplayerSessionSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -164,4 +180,10 @@ void UMultiplayerSessionSubsystem::OnDestroySessionComplete(FName SessionName, b
 
 void UMultiplayerSessionSubsystem::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	if(SessionInterface)
+	{
+		SessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegateHandle);
+	}
+
+	MultiplayerOnStartSessionComplete.Broadcast(bWasSuccessful);
 }

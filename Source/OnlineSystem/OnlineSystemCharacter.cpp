@@ -63,10 +63,10 @@ AOnlineSystemCharacter::AOnlineSystemCharacter()
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
 
 
-		if (GEngine)
+		/*if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
-		}
+		}*/
 	}
 
 }
@@ -163,10 +163,10 @@ void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bW
 {
 	if (bWasSuccessful)
 	{
-		if (GEngine)
+		/*if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString::Printf(TEXT("Created session: %s"), *SessionName.ToString()));
-		}
+		}*/
 
 		UWorld* World = GetWorld();
 		if (World)
@@ -178,10 +178,10 @@ void AOnlineSystemCharacter::OnCreatedSessionComplete(FName SessionName, bool bW
 	}
 	else
 	{
-		if (GEngine)
+		/*if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Failed to create session.")));
-		}
+		}*/
 	}
 }
 

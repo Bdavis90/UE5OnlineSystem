@@ -89,7 +89,13 @@ void UMenuWidget::OnCreateSession(bool bWasSuccessful)
 		if (World)
 		{
 			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
+
+			if(MultiplayerSessionSubsystem)
+			{
+				MultiplayerSessionSubsystem->StartSession();
+			}
 		}
+
 	} else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Failed to create session!")));
@@ -121,6 +127,10 @@ void UMenuWidget::OnDestorySession(bool bWasSuccessful)
 
 void UMenuWidget::OnStartSession(bool bWasSuccessful)
 {
+	if(GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue, FString(TEXT("Started Session!")));
+	}
 }
 
 void UMenuWidget::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful)
