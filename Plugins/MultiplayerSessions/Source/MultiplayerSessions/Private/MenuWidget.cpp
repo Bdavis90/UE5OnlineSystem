@@ -8,8 +8,9 @@
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
-void UMenuWidget::MenuSetup(int32 NumOfPublicConnections, FString TypeOfMatch)
+void UMenuWidget::MenuSetup(int32 NumOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
 {
+	PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
 	NumPublicConnections = NumOfPublicConnections;
 	MatchType = TypeOfMatch;
 
@@ -88,7 +89,7 @@ void UMenuWidget::OnCreateSession(bool bWasSuccessful)
 
 		if (World)
 		{
-			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
+			World->ServerTravel(PathToLobby);
 
 			if(MultiplayerSessionSubsystem)
 			{
@@ -99,13 +100,14 @@ void UMenuWidget::OnCreateSession(bool bWasSuccessful)
 	} else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString(TEXT("Failed to create session!")));
+		HostButton->SetIsEnabled(true);
 		
 	}
 }
 
 void UMenuWidget::HostButtonClicked()
 {
-
+	HostButton->SetIsEnabled(false);
 	if(MultiplayerSessionSubsystem)
 	{
 		MultiplayerSessionSubsystem->CreateSession(NumPublicConnections, MatchType);
@@ -114,6 +116,7 @@ void UMenuWidget::HostButtonClicked()
 
 void UMenuWidget::JoinButtonClicked()
 {
+	JoinButton->SetIsEnabled(false);
 	if (MultiplayerSessionSubsystem)
 	{
 		MultiplayerSessionSubsystem->FindSession(10000);
@@ -150,6 +153,11 @@ void UMenuWidget::OnFindSessions(const TArray<FOnlineSessionSearchResult>& Sessi
 			return;
 		}
 	}
+
+	if (!bWasSuccessful || SessionResults.Num() == 0)
+	{
+		JoinButton->SetIsEnabled(true);
+	}
 }
 
 void UMenuWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
@@ -171,6 +179,11 @@ void UMenuWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 				PlayerController->ClientTravel(Address, TRAVEL_Absolute);
 			}
 		}
+	}
+
+	if(Result != EOnJoinSessionCompleteResult::Success)
+	{
+		JoinButton->SetIsEnabled(true);
 	}
 }
 
